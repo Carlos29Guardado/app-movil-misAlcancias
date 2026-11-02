@@ -1,6 +1,12 @@
 require('dotenv').config();
 const pool = require('./config/db');
 
+// Una promesa rechazada que nadie maneje no debe detener el servidor durante la recolección:
+// se registra para revisarla después y el servidor sigue atendiendo.
+process.on('unhandledRejection', (motivo) => {
+  console.error('Promesa rechazada sin manejar:', motivo);
+});
+
 const express = require('express');
 const cors = require('cors');
 
