@@ -5,8 +5,16 @@ const pool = require('../config/db');
 
 const client = new OAuth2Client();
 
+// Duración de la sesión. Los colaboradores trabajan días sin internet; con 30 días no se les
+// vence la sesión a media campaña (al cerrar sesión se borra igual).
+const DURACION_SESION = '30d';
+
 const registro = async (req, res) => {
     const { nombre, email, password } = req.body;
+
+    if (!String(nombre || '').trim() || !String(email || '').trim() || !password) {
+        return res.status(400).json({ mensaje: 'Completa nombre, correo y contraseña.' });
+    }
 
     try {
         const usuarioExistente = await pool.query
@@ -55,7 +63,12 @@ const loginManual = async (req, res) => {
 
         const usuario = rows[0];
 
-        const passwordValida = await bcrypt.compare(password, usuario.password);
+        // Las cuentas creadas con Google no tienen contraseña
+        if (!usuario.password) {
+            return res.status(401).json({ mensaje: 'Esta cuenta se creó con Google. Inicia sesión con el botón de Google.' });
+        }
+
+        const passwordValida = await bcrypt.compare(String(password || ''), usuario.password);
 
         if (!passwordValida) {
             return res.status(401).json({ mensaje: 'Contraseña incorrecta.' });
@@ -65,7 +78,7 @@ const loginManual = async (req, res) => {
         const token = jwt.sign(
             { id: usuario.id, email: usuario.email },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: DURACION_SESION }
         )
         res.json({
             token,
@@ -128,7 +141,7 @@ const loginGoogle = async (req, res) => {
         const token = jwt.sign(
             { id: usuario.id, rol: usuario.rol, comunidad_id: usuario.comunidad_id },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: DURACION_SESION }
         );
 
         res.json({
