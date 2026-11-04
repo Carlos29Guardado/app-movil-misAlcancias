@@ -5,13 +5,32 @@ import { fetchApi } from '../services/api';
 
 const MENSAJE_SIN_CONEXION = 'Necesitas conexión a internet para administrar los lotes.';
 
-// Primer número que todavía no está en ningún lote (para sugerirlo al asignar uno nuevo)
-const sugerirInicio = (datos) => {
-    const finales = datos.miembros.flatMap((m) => m.lotes.map((l) => l.rango_fin));
-    if (finales.length === 0) return datos.rango_inicio ?? '';
-    const siguiente = Math.max(...finales) + 1;
-    if (datos.rango_fin != null && siguiente > datos.rango_fin) return '';
-    return siguiente;
+// Primer tramo de números del rango de la comunidad que no está en ningún lote.
+// Devuelve { inicio, fin } (fin es null si la comunidad no tiene rango definido),
+// o null cuando ya se repartieron todos los números del rango.
+const buscarNumerosLibres = (datos) => {
+    const lotes = datos.miembros
+        .flatMap((m) => m.lotes)
+        .map((l) => ({ inicio: Number(l.rango_inicio), fin: Number(l.rango_fin) }))
+        .sort((a, b) => a.inicio - b.inicio);
+    const rangoInicio = datos.rango_inicio != null ? Number(datos.rango_inicio) : null;
+    const rangoFin = datos.rango_fin != null ? Number(datos.rango_fin) : null;
+
+    // Sin rango de la comunidad: se sugiere el número siguiente al último lote
+    if (rangoInicio == null || rangoFin == null) {
+        if (lotes.length === 0) return { inicio: rangoInicio, fin: null };
+        return { inicio: Math.max(...lotes.map((l) => l.fin)) + 1, fin: null };
+    }
+
+    // Se recorren los lotes en orden buscando el primer hueco (puede quedar uno al quitar un lote)
+    let siguiente = rangoInicio;
+    for (const lote of lotes) {
+        if (lote.inicio > siguiente) {
+            return { inicio: siguiente, fin: Math.min(lote.inicio - 1, rangoFin) };
+        }
+        siguiente = Math.max(siguiente, lote.fin + 1);
+    }
+    return siguiente <= rangoFin ? { inicio: siguiente, fin: rangoFin } : null;
 };
 
 export const useLotes = () => {
@@ -24,6 +43,8 @@ export const useLotes = () => {
     const [desde, setDesde] = useState('');
     const [hasta, setHasta] = useState('');
     const [guardando, setGuardando] = useState(false);
+    // Números todavía sin lote, o null si ya se repartieron todos
+    const [libres, setLibres] = useState(/** @type {{ inicio: number | null, fin: number | null } | null} */ (null));
 
     const cargarLotes = async () => {
         try {
@@ -37,8 +58,9 @@ export const useLotes = () => {
             }
 
             setDatos(json);
-            const inicio = sugerirInicio(json);
-            setDesde(inicio === '' ? '' : String(inicio));
+            const numerosLibres = buscarNumerosLibres(json);
+            setLibres(numerosLibres);
+            setDesde(numerosLibres?.inicio != null ? String(numerosLibres.inicio) : '');
             setHasta('');
         } catch (err) {
             console.log('No se pudieron cargar los lotes:', err?.message || err);
@@ -131,6 +153,7 @@ export const useLotes = () => {
         desde, setDesde,
         hasta, setHasta,
         guardando,
+        libres,
         asignarLote,
         eliminarLote,
         reintentar: cargarLotes

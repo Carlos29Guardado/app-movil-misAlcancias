@@ -15,6 +15,7 @@ export default function LotesScreen() {
     desde, setDesde,
     hasta, setHasta,
     guardando,
+    libres,
     asignarLote,
     eliminarLote,
     reintentar
@@ -56,7 +57,16 @@ export default function LotesScreen() {
               : ''}
           </Text>
 
-          {/* Asignar un lote nuevo */}
+          {/* Asignar un lote nuevo (solo si quedan números sin repartir) */}
+          {libres == null ? (
+            <View style={styles.tarjeta}>
+              <Text style={styles.tituloTarjeta}>Asignar lote</Text>
+              <Text style={styles.sinLotes}>
+                Ya se repartieron todas las alcancías del rango de la comunidad. Para dar otro lote, quita uno que
+                todavía no tenga alcancías registradas.
+              </Text>
+            </View>
+          ) : (
           <View style={styles.tarjeta}>
             <Text style={styles.tituloTarjeta}>Asignar lote</Text>
 
@@ -83,7 +93,7 @@ export default function LotesScreen() {
                   value={desde}
                   onChangeText={(t) => setDesde(t.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
-                  placeholder="5073"
+                  placeholder={libres?.inicio != null ? String(libres.inicio) : ''}
                   placeholderTextColor="#7A8C91"
                 />
               </View>
@@ -94,12 +104,17 @@ export default function LotesScreen() {
                   value={hasta}
                   onChangeText={(t) => setHasta(t.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
-                  placeholder="5091"
+                  placeholder={libres?.fin != null ? String(libres.fin) : ''}
                   placeholderTextColor="#7A8C91"
                 />
               </View>
             </View>
             {cantidad != null && <Text style={styles.ayuda}>{cantidad} alcancías</Text>}
+            {libres?.fin != null && (
+              <Text style={styles.ayuda}>
+                Números libres: {libres.inicio} a {libres.fin} ({libres.fin - (libres.inicio ?? 0) + 1} alcancías)
+              </Text>
+            )}
 
             <TouchableOpacity
               style={[styles.botonPrincipal, guardando && styles.botonDeshabilitado]}
@@ -113,6 +128,7 @@ export default function LotesScreen() {
               )}
             </TouchableOpacity>
           </View>
+          )}
 
           {/* Lotes de cada miembro */}
           {datos?.miembros.map((m: any) => (
