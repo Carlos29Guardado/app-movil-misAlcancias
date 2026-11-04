@@ -311,7 +311,52 @@ const transferirAdministracion = async (req, res) => {
     }
 };
 
+// El admin saca a un colaborador de la comunidad (solo admin).
+// Igual que al abandonar: sus alcancías se quedan en la comunidad y sus lotes se quitan,
+// así los números que no usó quedan libres para asignarlos a otra persona.
+const sacarMiembro = async (req, res) => {
+    const miembroId = Number(req.params.id);
+    if (!Number.isInteger(miembroId) || miembroId === Number(req.usuario.id)) {
+        return res.status(400).json({ mensaje: 'Para salir tú de la comunidad usa "Abandonar comunidad".' });
+    }
+
+    let client;
+    try {
+        client = await pool.connect();
+        await client.query('BEGIN');
+
+        const { rows: [miembro] } = await client.query(
+            'SELECT id, nombre, email, rol FROM usuarios WHERE id = $1 AND comunidad_id = $2 FOR UPDATE',
+            [miembroId, req.comunidadId]
+        );
+        if (!miembro) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ mensaje: 'Esa persona ya no pertenece a tu comunidad.' });
+        }
+        if (miembro.rol === 'admin') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ mensaje: 'No se puede sacar al administrador de la comunidad.' });
+        }
+
+        await client.query('DELETE FROM lotes WHERE comunidad_id = $1 AND usuario_id = $2', [req.comunidadId, miembro.id]);
+        await client.query(
+            "UPDATE usuarios SET comunidad_id = NULL, rol = 'colaborador' WHERE id = $1",
+            [miembro.id]
+        );
+
+        await client.query('COMMIT');
+        res.status(200).json({ mensaje: `${miembro.nombre || miembro.email} ya no pertenece a la comunidad.` });
+    } catch (error) {
+        if (client) await client.query('ROLLBACK').catch(() => {});
+        console.error('Error al sacar al miembro de la comunidad:', error);
+        res.status(500).json({ mensaje: 'Error interno del servidor.' });
+    } finally {
+        if (client) client.release();
+    }
+};
+
 module.exports = {
+    sacarMiembro,
     abandonarComunidad,
     transferirAdministracion,
     obtenerEstadoComunidad,

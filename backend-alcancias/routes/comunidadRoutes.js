@@ -10,7 +10,8 @@ const {
     obtenerEstadoComunidad,
     cambiarEstadoComunidad,
     abandonarComunidad,
-    transferirAdministracion
+    transferirAdministracion,
+    sacarMiembro
 } = require('../controllers/comunidadController');
 const { listarLotes, crearLote, eliminarLote, misLotes } = require('../controllers/loteController');
 const { verificarToken } = require('../middlewares/verificarToken');
@@ -38,5 +39,8 @@ router.get('/mis-lotes', verificarToken, verificarComunidad, misLotes);
 // Salir de la comunidad (cualquier miembro) y pasar la administración (solo admin)
 router.post('/abandonar', verificarToken, verificarComunidad, abandonarComunidad);
 router.put('/admin', verificarToken, verificarComunidad, soloAdmin, transferirAdministracion);
+
+// El admin saca a un colaborador de la comunidad
+router.delete('/usuarios/:id', verificarToken, verificarComunidad, soloAdmin, sacarMiembro);
 
 module.exports = router;

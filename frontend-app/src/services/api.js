@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import { API_URL } from '../../config/config';
+import { borrarDatosLocales } from '../../database/sqlite';
 
 // Tiempo máximo de espera por defecto para cada petición
 const TIEMPO_ESPERA_MS = 10000;
@@ -67,6 +68,34 @@ const avisarComunidadCerrada = async () => {
     );
 };
 
+// Evita repetir el aviso de que el admin sacó al usuario de la comunidad
+let avisoSalidaMostrado = false;
+
+// El administrador sacó al usuario de la comunidad desde otro teléfono: se borra lo de esa
+// comunidad del teléfono (ya no se puede subir) y se regresa a la bienvenida para unirse a otra.
+const avisarSacadoDeComunidad = async () => {
+    const usuario = JSON.parse((await AsyncStorage.getItem('userData')) || '{}');
+    // Si ya no tenía comunidad en la sesión (por ejemplo, acaba de abandonarla) no hay nada que avisar
+    if (!usuario.comunidad_id || avisoSalidaMostrado) return;
+    avisoSalidaMostrado = true;
+
+    borrarDatosLocales();
+    await quitarComunidadDeSesion();
+
+    Alert.alert(
+        'Ya no perteneces a la comunidad',
+        'El administrador te sacó de la comunidad. Las alcancías que registraste se quedan en ella. Para volver, pídele un código de invitación.',
+        [{
+            text: 'OK',
+            onPress: () => {
+                avisoSalidaMostrado = false;
+                router.replace('/bienvenida');
+            }
+        }],
+        { cancelable: false }
+    );
+};
+
 // Pregunta al servidor si la comunidad sigue activa y cuál es el rol actual del usuario,
 // y lo guarda en la sesión. El rol puede cambiar desde otro teléfono (al hacerlo administrador).
 // Devuelve la sesión actualizada, o null si no se pudo consultar (sin internet).
@@ -117,6 +146,8 @@ export const fetchApi = async (ruta, opciones = {}, tiempoMs = TIEMPO_ESPERA_MS)
             avisarSesionVencida();
         } else if (cuerpo.comunidad_cerrada) {
             avisarComunidadCerrada();
+        } else if (cuerpo.sin_comunidad) {
+            avisarSacadoDeComunidad();
         }
     }
 

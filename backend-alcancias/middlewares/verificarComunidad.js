@@ -14,7 +14,8 @@ const verificarComunidad = async (req, res, next) => {
         );
 
         if (rows.length === 0 || !rows[0].comunidad_id) {
-            return res.status(403).json({ error: 'No perteneces a ninguna comunidad.' });
+            // `sin_comunidad` le indica a la app que el admin lo sacó (o ya salió) de la comunidad
+            return res.status(403).json({ error: 'No perteneces a ninguna comunidad.', sin_comunidad: true });
         }
 
         req.comunidadId = Number(rows[0].comunidad_id);

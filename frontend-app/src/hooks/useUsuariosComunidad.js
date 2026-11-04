@@ -97,6 +97,53 @@ export const useUsuariosComunidad = () => {
         );
     };
 
+    // El admin saca a un colaborador de la comunidad. Sus alcancías se quedan y sus lotes se liberan.
+    const sacarDeComunidad = (miembro) => {
+        const nombre = miembro.nombre || miembro.email;
+        Alert.alert(
+            'Sacar de la comunidad',
+            `${nombre} ya no podrá registrar ni ver las alcancías de la comunidad. Las que ya subió se quedan y sus lotes quedan libres para asignarlos a otra persona.
+
+Si tiene alcancías sin subir en su teléfono, se perderán: pídele que se conecte a internet antes.`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Sacar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const respuesta = await fetchApi(`/comunidad/usuarios/${miembro.id}`, { method: 'DELETE' });
+                            const datos = await respuesta.json();
+
+                            if (!respuesta.ok) {
+                                Alert.alert('No se pudo sacar', datos.mensaje || 'Intenta de nuevo.');
+                                return;
+                            }
+
+                            setColaboradores((lista) => lista.filter((u) => u.id !== miembro.id));
+                            Alert.alert('Listo', datos.mensaje);
+                        } catch (err) {
+                            Alert.alert('Sin conexión', 'Necesitas internet para sacar a alguien de la comunidad.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    // Opciones al tocar a un colaborador
+    const mostrarOpciones = (miembro) => {
+        Alert.alert(
+            miembro.nombre || miembro.email,
+            '¿Qué quieres hacer con este colaborador?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Sacar de la comunidad', style: 'destructive', onPress: () => sacarDeComunidad(miembro) },
+                { text: 'Hacer administrador', onPress: () => hacerAdministrador(miembro) }
+            ]
+        );
+    };
+
     return {
         administradores,
         colaboradores,
@@ -104,6 +151,6 @@ export const useUsuariosComunidad = () => {
         refrescando,
         error,
         onRefresh,
-        hacerAdministrador
+        mostrarOpciones
     };
 };
