@@ -15,8 +15,6 @@ export default function RegistrarAlcanciaScreen() {
     modoLotes,
     lotes,
     nombrePersona, setNombrePersona,
-    monto, setMonto,
-    estado, setEstado,
     cargandoInicial,
     guardando,
     manejarRegistro
@@ -80,29 +78,25 @@ export default function RegistrarAlcanciaScreen() {
           />
         </View>
 
+        {/* Al registrar la alcancía apenas se entrega: el estado es fijo y el monto se captura al recogerla */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Estado de la Alcancía</Text>
           <View style={styles.radioContainer}>
             {opcionesEstado.map((opcion) => (
-              <TouchableOpacity
+              <View
                 key={opcion}
                 style={[
                   styles.radioBoton,
-                  estado === opcion && styles.radioBotonSeleccionado
+                  opcion === 'Colocada' ? styles.radioBotonSeleccionado : { opacity: 0.35 }
                 ]}
-                onPress={() => {
-                  setEstado(opcion);
-                  // Si está faltante, limpiamos el monto
-                  if (opcion === 'Faltante') setMonto('');
-                }}
               >
                 <Text style={[
                   styles.radioTexto,
-                  estado === opcion && styles.radioTextoSeleccionado
+                  opcion === 'Colocada' && styles.radioTextoSeleccionado
                 ]}>
                   {opcion}
                 </Text>
-              </TouchableOpacity>
+              </View>
             ))}
           </View>
         </View>
@@ -110,14 +104,14 @@ export default function RegistrarAlcanciaScreen() {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Monto Recaudado ($)</Text>
           <TextInput
-            style={[styles.input, estado === 'Faltante' && styles.inputBloqueado]}
-            placeholder={estado === 'Faltante' ? "No aplica" : "0.00"}
+            style={[styles.input, styles.inputBloqueado]}
+            placeholder="Se captura al recoger la alcancía"
             placeholderTextColor="#9AA8AC"
-            keyboardType="decimal-pad"
-            value={monto}
-            onChangeText={setMonto}
-            editable={estado !== 'Faltante'} // Se bloquea si está faltante
+            editable={false}
           />
+          <Text style={styles.ayuda}>
+            Cuando la recojas, búscala en la Lista de Alcancías y cambia el estado a Devuelta o Faltante con su monto.
+          </Text>
         </View>
 
         <TouchableOpacity 
