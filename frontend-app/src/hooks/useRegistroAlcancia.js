@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchApi, comunidadEstaActiva } from '../services/api';
-import { validarMonto } from '../services/validaciones';
 import { guardarAlcanciaLocal, obtenerSiguienteCodigoLocal, tieneCambiosPendientes } from '../../database/sqlite';
 import { sincronizarPendientes } from './useSincronizacion';
 import { refrescarMisLotes, siguienteNumeroDelUsuario, numeroEnLotes, describirLotes } from '../services/lotes';
@@ -17,13 +16,9 @@ export const useRegistroAlcancia = () => {
     const [lotes, setLotes] = useState([]);
 
     const [nombrePersona, setNombrePersona] = useState('');
-    const [monto, setMonto] = useState('');
-    const [estado, setEstado] = useState('Colocada');
     const [guardando, setGuardando] = useState(false);
     //Candado para que un doble toque rápido no registre la misma alcancía dos veces
     const registrando = useRef(false);
-
-    const opcionesEstado = ['Colocada', 'Devuelta', 'Faltante'];
 
     useEffect(() => {
         const obtenerDatosSector = async () => {
@@ -147,21 +142,17 @@ export const useRegistroAlcancia = () => {
         return;
       }
 
-      const montoValidado = validarMonto(monto, estado);
-      if (!montoValidado.valido) {
-        Alert.alert('Monto inválido', montoValidado.mensaje);
-        return;
-      }
-
       const payload = {
         codigo_alcancia: codigo,
         nombre_persona: nombre,
         comunidad_id: usuario.comunidad_id,
         usuario_id: usuario.id,
-        colocada: estado === 'Colocada' ? 1 : 0,
-        devuelta: estado === 'Devuelta' ? 1 : 0,
-        faltante: estado === 'Faltante' ? 1 : 0,
-        monto_entregado: montoValidado.valor,
+        // Al registrar, la alcancía apenas se entrega: siempre queda Colocada y sin monto.
+        // El estado y el monto se capturan después, al editarla cuando se recoge.
+        colocada: 1,
+        devuelta: 0,
+        faltante: 0,
+        monto_entregado: null,
       };
 
       const resultadoLocal = guardarAlcanciaLocal(payload);
@@ -181,8 +172,6 @@ export const useRegistroAlcancia = () => {
             text: 'Siguiente',
             onPress: () => {
               setNombrePersona('');
-              setMonto('');
-              setEstado('Colocada');
               if (usuario.usa_lotes) {
                 // Siguiente número libre de sus lotes (ya cuenta el que se acaba de guardar)
                 const siguiente = siguienteNumeroDelUsuario(usuario);
@@ -214,13 +203,9 @@ export const useRegistroAlcancia = () => {
         modoLotes,
         lotes,
         nombrePersona, setNombrePersona,
-        monto, setMonto,
-        estado, setEstado,
-        opcionesEstado,
         cargandoInicial,
         guardando,
-        manejarRegistro,
-        opcionesEstado
+        manejarRegistro
     };
 
 
