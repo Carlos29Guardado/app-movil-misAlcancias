@@ -158,6 +158,22 @@ export default function MenuPrincipalScreen() {
             <Ionicons name="chevron-forward" size={24} color="#C2DFE3" />
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.tarjeta}
+            onPress={() => router.push('/estadisticas' as any)}
+          >
+            <View style={styles.iconoContainer}>
+              <Ionicons name="stats-chart" size={32} color="#C2DFE3" />
+            </View>
+            <View style={styles.tarjetaTexto}>
+              <Text style={styles.tarjetaTitulo}>Estadísticas</Text>
+              <Text style={styles.tarjetaDesc}>
+                {usuario?.rol === 'admin' ? 'Total recaudado y exportar a Excel' : 'Total recaudado y avance'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#C2DFE3" />
+          </TouchableOpacity>
+
           {usuario?.rol === 'admin' && (
             <TouchableOpacity
               style={styles.tarjeta}

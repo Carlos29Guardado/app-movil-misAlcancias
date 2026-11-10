@@ -10,6 +10,10 @@ const verificarToken = (req, res, next) => {
 
   try {
     const usuarioDecodificado = jwt.verify(token, process.env.JWT_SECRET);
+    // Un token de uso específico (por ejemplo, el del enlace para descargar el Excel) no sirve como sesión
+    if (usuarioDecodificado.uso) {
+      return res.status(403).json({ error: 'Token inválido o expirado.' });
+    }
     req.usuario = usuarioDecodificado; 
     next();
   } catch (error) {
