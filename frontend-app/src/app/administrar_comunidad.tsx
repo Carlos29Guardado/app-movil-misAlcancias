@@ -110,16 +110,18 @@ export default function AdministrarComunidadScreen() {
               <Text style={styles.etiquetaDato}>Rango de alcancías</Text>
               <Text style={styles.valorDato}>{comunidad?.rango_inicio} a {comunidad?.rango_fin}</Text>
             </View>
-            <View style={styles.filaDato}>
-              <Text style={styles.etiquetaDato}>Alcancías registradas</Text>
-              <Text style={styles.valorDato}>
-                {comunidad?.total_alcancias} de {comunidad ? comunidad.rango_fin - comunidad.rango_inicio + 1 : 0}
-              </Text>
-            </View>
             <View style={[styles.filaDato, { borderBottomWidth: 0 }]}>
               <Text style={styles.etiquetaDato}>Miembros</Text>
               <Text style={styles.valorDato}>{comunidad?.total_miembros}</Text>
             </View>
+            {/* El avance, el dinero recaudado y el Excel están en Estadísticas */}
+            <TouchableOpacity
+              style={[styles.botonSecundario, { marginTop: 12 }]}
+              onPress={() => router.push('/estadisticas' as any)}
+            >
+              <Ionicons name="stats-chart-outline" size={20} color="#C2DFE3" />
+              <Text style={styles.textoBotonSecundario}>Ver estadísticas</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Lotes: qué números de alcancía se lleva cada colaborador */}
